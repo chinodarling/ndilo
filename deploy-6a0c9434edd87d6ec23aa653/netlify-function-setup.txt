@@ -1,0 +1,246 @@
+NDILO + NETLIFY FUNCTIONS - SETUP GUIDE
+========================================
+
+✅ STATUS: Your Netlify function is already handling Groq API
+No API key exposed in frontend ✓
+Security hardened ✓
+
+═══════════════════════════════════════════════════════════════════════════════
+YOUR NETLIFY FUNCTION SHOULD LOOK LIKE THIS
+═══════════════════════════════════════════════════════════════════════════════
+
+Location: netlify/functions/chat.js
+
+---START OF CODE---
+
+const fetch = require('node-fetch');
+
+exports.handler = async (event) => {
+    // CORS headers
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Content-Type': 'application/json',
+    };
+
+    // Handle CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+        return { statusCode: 200, headers };
+    }
+
+    // Only accept POST requests
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            headers,
+            body: JSON.stringify({ error: 'Method Not Allowed' }),
+        };
+    }
+
+    try {
+        // Parse incoming request from frontend
+        const payload = JSON.parse(event.body);
+
+        // Call Groq API with key from environment variable
+        // Key is NEVER exposed to frontend
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            return {
+                statusCode: response.status,
+                headers,
+                body: JSON.stringify({
+                    error: error.error?.message || 'Groq API Error',
+                }),
+            };
+        }
+
+        const data = await response.json();
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify(data),
+        };
+    } catch (error) {
+        console.error('Chat function error:', error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+                error: 'Internal Server Error',
+                message: error.message,
+            }),
+        };
+    }
+};
+
+---END OF CODE---
+
+═══════════════════════════════════════════════════════════════════════════════
+NETLIFY ENVIRONMENT VARIABLES
+═══════════════════════════════════════════════════════════════════════════════
+
+Your Netlify dashboard should have:
+
+1. Go to: Netlify Dashboard → Your Site → Site Settings
+2. → Build & deploy → Environment
+3. → Add variable
+
+Variable name: GROQ_API_KEY
+Variable value: gsk_YOUR_ACTUAL_KEY_FROM_CONSOLE.GROQ.COM
+
+⚠️  IMPORTANT:
+- Never commit API key to GitHub
+- Store only in Netlify environment variables
+- Check that netlify.toml has no secrets
+
+
+═══════════════════════════════════════════════════════════════════════════════
+HOW THE FLOW WORKS
+═══════════════════════════════════════════════════════════════════════════════
+
+USER → FRONTEND → NETLIFY FUNCTION → GROQ API → RESPONSE
+                (no API key here!)   (key stored here)
+
+1. User types message in chatbot
+2. Frontend sends to: /.netlify/functions/chat
+3. Netlify function receives request (no auth needed)
+4. Function adds GROQ_API_KEY from environment
+5. Function calls Groq API securely
+6. Groq returns response
+7. Function passes response back to frontend
+8. Frontend displays in chat
+
+
+═══════════════════════════════════════════════════════════════════════════════
+VERIFY YOUR SETUP
+═══════════════════════════════════════════════════════════════════════════════
+
+Test in browser console (F12 → Console):
+
+fetch('/.netlify/functions/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        model: 'mixtral-8x7b-32768',
+        messages: [
+            { role: 'system', content: 'You are helpful' },
+            { role: 'user', content: 'Hello' }
+        ],
+        temperature: 0.7,
+        max_tokens: 100,
+    })
+})
+.then(r => r.json())
+.then(d => console.log(d))
+
+Expected result:
+- ✅ Response with message from Groq
+- ❌ 404 = Function doesn't exist (check path)
+- ❌ 401 = API key invalid
+- ❌ 500 = Internal error (check logs)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+ISSUE: "Failed to fetch"
+CAUSE: Function not deployed
+FIX: Deploy to Netlify, wait 1-2 minutes
+
+ISSUE: "401 Unauthorized"
+CAUSE: GROQ_API_KEY invalid or not set
+FIX: 
+1. Check Netlify environment variables
+2. Verify key copied correctly from console.groq.com
+3. Redeploy after adding env var
+
+ISSUE: "404 Not Found"
+CAUSE: Function path wrong
+FIX: Verify path is exactly: /.netlify/functions/chat
+
+ISSUE: "CORS error"
+CAUSE: Missing CORS headers in function
+FIX: Check function includes:
+     'Access-Control-Allow-Origin': '*'
+
+ISSUE: "No response received"
+CAUSE: Groq didn't return expected format
+FIX: Check browser DevTools Network tab
+     Look at response from /.netlify/functions/chat
+
+ISSUE: Chatbot still not working
+CAUSE: ndilo-hardened.html not updated
+FIX: Make sure you uploaded the NEW file
+     Old file calls Groq directly (won't work)
+     New file calls /.netlify/functions/chat
+
+
+═══════════════════════════════════════════════════════════════════════════════
+NETLIFY LOGS
+═══════════════════════════════════════════════════════════════════════════════
+
+View function logs:
+
+1. Netlify Dashboard → Your Site
+2. → Functions
+3. → Click "chat" function
+4. → Logs tab
+5. See console.error() and console.log() output
+
+Helpful for debugging!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+DEPLOYMENT CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+□ ndilo-hardened.html uploaded to GitHub
+□ GitHub repo synced with Netlify
+□ GROQ_API_KEY in Netlify environment variables
+□ chat.js function deployed in netlify/functions/
+□ Test function manually (copy test code above)
+□ Clear browser cache (Cmd+Shift+R or Ctrl+Shift+R)
+□ Test chatbot at https://ndilo.netlify.app
+□ Check browser console for errors
+□ Try multiple questions to test conversation history
+
+
+═══════════════════════════════════════════════════════════════════════════════
+WHAT'S SECURED NOW
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ API KEY: Hidden in Netlify environment (not in code)
+✅ FRONTEND: No secrets exposed (anyone can inspect HTML)
+✅ COMMUNICATION: HTTPS (Netlify enforces)
+✅ BACKEND: Only server-to-server calls (Netlify → Groq)
+✅ CONVERSATION: Not stored (in-memory only, no database)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+NEXT STEPS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Upload ndilo-hardened.html to GitHub
+2. Confirm Netlify deployment (automatic)
+3. Test chatbot with different questions
+4. Verify conversation history works (bot remembers context)
+5. When client provides QR codes:
+   - Add images to /images folder on GitHub
+   - Replace placeholders in index.html
+   - Commit & redeploy
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Questions? Everything is documented in NDILO-QA-AUDIT-121-POINTS.txt

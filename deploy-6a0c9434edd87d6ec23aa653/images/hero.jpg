@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <rect width="1200" height="800" fill="#FAF6EF"/>
+  <circle cx="600" cy="340" r="150" fill="#C41E3A" opacity="0.18"/>
+  <text x="600" y="385" font-family="Georgia, serif" font-size="54" text-anchor="middle" fill="#180A0A">Fresh Hardbody Chickens</text>
+  <text x="600" y="455" font-family="Arial, sans-serif" font-size="24" text-anchor="middle" fill="#7A6458">Replace this placeholder in /images</text>
+</svg>

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ndilo - AI Assistant for All 11 SA Languages</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #333;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #c41e3a 0%, #a01730 100%);
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .header-info h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .header-info p {
+            font-size: 12px;
+            opacity: 0.9;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            opacity: 0.8;
+        }
+
+        /* Language Selector */
+        .language-selector {
+            background: #f5f1e8;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #e0dcd0;
+        }
+
+        .language-selector label {
+            font-weight: 500;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .language-selector select {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .language-selector select:focus {
+            outline: none;
+            border-color: #c41e3a;
+            box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+        }
+
+        /* Chat Container */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 180px);
+            background: #f9f8f5;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        /* Message Styles */
+        .message {
+            display: flex;
+            gap: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.bot .message-bubble {
+            background: #f0ebe3;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .message-bubble {
+            background: #c41e3a;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: #f0ebe3;
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #999;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        /* Payment QR Section */
+        .payment-section {
+            background: #f5f1e8;
+            padding: 16px;
+            border-top: 1px solid #e0dcd0;
+            display: none; /* Hidden until payment button clicked */
+        }
+
+        .payment-section.show {
+            display: block;
+        }
+
+        .payment-header {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .payment-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .payment-tab {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .payment-tab.active {
+            border-color: #c41e3a;
+            background: #c41e3a;
+            color: white;
+        }
+
+        .payment-tab:hover {
+            border-color: #c41e3a;
+        }
+
+        .qr-container {
+            display: none;
+            text-align: center;
+        }
+
+        .qr-container.active {
+            display: block;
+        }
+
+        .qr-image {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 0 auto 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            padding: 8px;
+        }
+
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 12px;
+            background: #e8e8e8;
+            border: 2px dashed #999;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .qr-placeholder-text {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .qr-instructions {
+            font-size: 12px;
+            color: #666;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
+        /* Input Area */
+        .input-area {
+            background: #f5f1e8;
+            padding: 16px;
+            border-top: 1px solid #e0dcd0;
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .input-btn {
+            background: #e8dfd4;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: background 0.2s;
+        }
+
+        .input-btn:hover {
+            background: #ddd0c5;
+        }
+
+        .input-btn.payment {
+            font-size: 16px;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            max-height: 80px;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #c41e3a;
+            box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+        }
+
+        .send-btn {
+            background: #c41e3a;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: background 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #a01730;
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* WhatsApp CTA */
+        .whatsapp-cta {
+            background: #25d366;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .whatsapp-cta:hover {
+            background: #1fa855;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 0 16px;
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .message-bubble {
+                max-width: 90%;
+            }
+
+            .header h1 {
+                font-size: 16px;
+            }
+
+            .input-area {
+                padding: 12px;
+                gap: 6px;
+            }
+
+            .input-btn,
+            .send-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-avatar">🐔</div>
+            <div class="header-info">
+                <h1>Ndilo Assistant</h1>
+                <p>Online · All 11 SA languages</p>
+            </div>
+        </div>
+        <button class="close-btn" aria-label="Close chat">✕</button>
+    </div>
+
+    <div class="language-selector">
+        <label for="language-select">Chat in:</label>
+        <select id="language-select" aria-label="Select language">
+            <option value="en">English</option>
+            <option value="zu">isiZulu</option>
+            <option value="xh">isiXhosa</option>
+            <option value="af">Afrikaans</option>
+            <option value="st">Sesotho</option>
+            <option value="tn">Setswana</option>
+            <option value="ss">SiSwati</option>
+            <option value="ve">Tshivenda</option>
+            <option value="nr">isiNdebele</option>
+            <option value="ts">Xitsonga</option>
+            <option value="nso">Sepedi</option>
+        </select>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="empty-state">
+                <div class="empty-state-icon">👋</div>
+                <p>Welcome to Ndilo Assistant</p>
+                <p style="font-size: 12px; opacity: 0.7;">Ask me about our fresh hardbody chickens</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment QR Section (Hidden by default) -->
+    <div class="payment-section" id="paymentSection">
+        <div class="payment-header">Select Payment Method</div>
+        <div class="payment-tabs">
+            <button class="payment-tab active" data-method="capitec" aria-label="Pay with Capitec">Capitec</button>
+            <button class="payment-tab" data-method="fnb" aria-label="Pay with FNB">FNB</button>
+        </div>
+
+        <!-- CAPITEC QR CODE CONTAINER -->
+        <!-- TO EDIT: Replace the qr-placeholder div below with an <img> tag once you have the Capitec QR code -->
+        <!-- Example: <img src="path/to/capitec-qr.png" alt="Capitec QR Code" class="qr-image"> -->
+        <div id="capitecQR" class="qr-container active">
+            <div class="qr-placeholder">
+                <div class="qr-placeholder-text">Capitec QR Code</div>
+                <div style="font-size: 11px;">Waiting for QR code</div>
+            </div>
+            <div class="qr-instructions">
+                <strong>To add your Capitec QR:</strong> Open this file in a code editor, find the comment "CAPITEC QR CODE CONTAINER" and replace the placeholder with: <code>&lt;img src="your-capitec-qr.png" alt="Capitec QR" class="qr-image"&gt;</code>
+            </div>
+        </div>
+
+        <!-- FNB QR CODE CONTAINER -->
+        <!-- TO EDIT: Replace the qr-placeholder div below with an <img> tag once you have the FNB QR code -->
+        <!-- Example: <img src="path/to/fnb-qr.png" alt="FNB QR Code" class="qr-image"> -->
+        <div id="fnbQR" class="qr-container">
+            <div class="qr-placeholder">
+                <div class="qr-placeholder-text">FNB QR Code</div>
+                <div style="font-size: 11px;">Waiting for QR code</div>
+            </div>
+            <div class="qr-instructions">
+                <strong>To add your FNB QR:</strong> Open this file in a code editor, find the comment "FNB QR CODE CONTAINER" and replace the placeholder with: <code>&lt;img src="your-fnb-qr.png" alt="FNB QR" class="qr-image"&gt;</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+        <div class="input-wrapper">
+            <button class="input-btn" id="attachBtn" aria-label="Attach file" title="Attach file">📎</button>
+            <textarea
+                class="chat-input"
+                id="chatInput"
+                placeholder="Type or speak your order..."
+                aria-label="Message input"
+                rows="1"
+            ></textarea>
+            <button class="input-btn payment" id="paymentBtn" aria-label="Show payment options" title="Show payment QR">💳</button>
+        </div>
+        <button class="send-btn" id="sendBtn" aria-label="Send message">▶</button>
+    </div>
+
+    <!-- WhatsApp CTA -->
+    <div class="whatsapp-cta" id="whatsappCTA">
+        📱 Prefer WhatsApp? Chat directly →
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - UPDATE THESE VALUES
+        // ============================================
+        const CONFIG = {
+            // Groq API key is in your Netlify function environment variables
+            // Never expose API keys in frontend code - this is secure! ✓
+            GROQ_MODEL: 'mixtral-8x7b-32768',
+            WHATSAPP_NUMBER: '27711285292', // Ndilo WhatsApp number
+            WHATSAPP_MESSAGE: 'Hi Ndilo, I\'m interested in ordering fresh hardbody chickens.',
+            SYSTEM_PROMPT: `You are Ndilo Assistant, a helpful AI for ordering fresh hardbody chickens in South Africa.
+
+PRODUCT INFO:
+- Fresh hardbody chickens: R130 each (whole bird + all innards)
+- Prepared fresh for orders at Carlswald Decor Centre
+- 24 hours notice required for orders
+
+CUSTOMER SERVICE FLOW:
+1. Greet warmly and acknowledge their language
+2. Ask what they'd like to order
+3. Collect: Name, WhatsApp number, quantity, collection date, collection vs Ubersend
+4. Confirm order details
+5. Provide WhatsApp contact: 071 128 5292
+
+TONE: Friendly, professional, helpful. Address customers respectfully.
+
+IMPORTANT: Vary your responses based on what the customer asks. Don't repeat the same message.
+If asked about pricing, explain the R130 per bird.
+If asked about delivery, explain the 24-hour notice and collection/Ubersend options.
+If they want to order, collect all necessary information.`,
+        };
+
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        const state = {
+            conversationHistory: [], // Stores message history for context
+            currentLanguage: 'en',
+            isLoading: false,
+            paymentVisible: false,
+        };
+
+        // ============================================
+        // DOM ELEMENTS
+        // ============================================
+        const elements = {
+            chatMessages: document.getElementById('chatMessages'),
+            chatInput: document.getElementById('chatInput'),
+            sendBtn: document.getElementById('sendBtn'),
+            closeBtn: document.querySelector('.close-btn'),
+            languageSelect: document.getElementById('language-select'),
+            paymentBtn: document.getElementById('paymentBtn'),
+            paymentSection: document.getElementById('paymentSection'),
+            whatsappCTA: document.getElementById('whatsappCTA'),
+            attachBtn: document.getElementById('attachBtn'),
+            paymentTabs: document.querySelectorAll('.payment-tab'),
+        };
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        elements.sendBtn.addEventListener('click', handleSendMessage);
+        elements.chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        });
+
+        elements.closeBtn.addEventListener('click', () => {
+            alert('Close functionality: Implement based on your platform (close modal, clear chat, etc.)');
+        });
+
+        elements.languageSelect.addEventListener('change', (e) => {
+            state.currentLanguage = e.target.value;
+            console.log(`Language changed to: ${e.target.value}`);
+        });
+
+        elements.paymentBtn.addEventListener('click', togglePaymentSection);
+
+        elements.paymentTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                elements.paymentTabs.forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                const method = e.target.dataset.method;
+                switchPaymentMethod(method);
+            });
+        });
+
+        elements.whatsappCTA.addEventListener('click', openWhatsApp);
+        elements.attachBtn.addEventListener('click', () => {
+            alert('Attach file feature: Implement file upload based on your use case');
+        });
+
+        // ============================================
+        // CORE FUNCTIONS
+        // ============================================
+
+        /**
+         * Handle sending a message
+         * Collects user input, adds to history, and calls Groq API
+         */
+        async function handleSendMessage() {
+            const message = elements.chatInput.value.trim();
+            if (!message || state.isLoading) return;
+
+            // Add user message to UI
+            addMessageToChat('user', message);
+            elements.chatInput.value = '';
+            elements.chatInput.style.height = 'auto';
+
+            // Add to conversation history for context
+            state.conversationHistory.push({
+                role: 'user',
+                content: message,
+            });
+
+            // Show loading indicator
+            state.isLoading = true;
+            showTypingIndicator();
+
+            try {
+                // Call Groq API
+                const response = await callGroqAPI(message);
+                
+                // Remove typing indicator
+                removeTypingIndicator();
+
+                // Add bot response to UI
+                addMessageToChat('bot', response);
+
+                // Add to conversation history
+                state.conversationHistory.push({
+                    role: 'assistant',
+                    content: response,
+                });
+            } catch (error) {
+                removeTypingIndicator();
+                console.error('Error:', error);
+                addErrorMessage(`Unable to get response: ${error.message}`);
+            } finally {
+                state.isLoading = false;
+            }
+        }
+
+        /**
+         * Call Groq API via Netlify Function (secure backend proxy)
+         * API key is hidden on backend - never exposed in frontend
+         * Your Netlify function handles authentication securely
+         */
+        async function callGroqAPI(userMessage) {
+            // Build messages array with full conversation history
+            const messages = [
+                {
+                    role: 'system',
+                    content: CONFIG.SYSTEM_PROMPT,
+                },
+                ...state.conversationHistory.slice(-10), // Keep last 10 messages for context
+            ];
+
+            const payload = {
+                model: CONFIG.GROQ_MODEL,
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 500,
+                top_p: 1,
+                stream: false,
+            };
+
+            try {
+                // Call your secure Netlify function
+                // The function has GROQ_API_KEY in environment variables
+                // Frontend never sees the key
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || `API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0]?.message?.content || 'No response received';
+            } catch (error) {
+                throw new Error(`Chat Error: ${error.message}`);
+            }
+        }
+
+        /**
+         * Add a message to the chat UI
+         */
+        function addMessageToChat(role, text) {
+            // Clear empty state if first message
+            if (state.conversationHistory.length === 1) {
+                elements.chatMessages.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+
+            messageDiv.appendChild(bubble);
+            elements.chatMessages.appendChild(messageDiv);
+
+            // Auto-scroll to bottom
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        /**
+         * Show typing indicator while waiting for response
+         */
+        function showTypingIndicator() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.id = 'typingIndicator';
+
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+            messageDiv.appendChild(indicator);
+            elements.chatMessages.appendChild(messageDiv);
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        /**
+         * Remove typing indicator
+         */
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        /**
+         * Show error message in chat
+         */
+        function addErrorMessage(error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = error;
+            elements.chatMessages.appendChild(errorDiv);
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        /**
+         * Toggle payment section visibility
+         */
+        function togglePaymentSection() {
+            state.paymentVisible = !state.paymentVisible;
+            elements.paymentSection.classList.toggle('show', state.paymentVisible);
+            elements.paymentBtn.style.opacity = state.paymentVisible ? '1' : '0.6';
+        }
+
+        /**
+         * Switch between Capitec and FNB payment QR
+         */
+        function switchPaymentMethod(method) {
+            document.getElementById('capitecQR').classList.toggle('active', method === 'capitec');
+            document.getElementById('fnbQR').classList.toggle('active', method === 'fnb');
+        }
+
+        /**
+         * Open WhatsApp chat
+         */
+        function openWhatsApp() {
+            const encodedMessage = encodeURIComponent(CONFIG.WHATSAPP_MESSAGE);
+            const whatsappURL = `https://wa.me/${CONFIG.WHATSAPP_NUMBER}?text=${encodedMessage}`;
+            window.open(whatsappURL, '_blank');
+        }
+
+        /**
+         * Auto-resize textarea as user types
+         */
+        elements.chatInput.addEventListener('input', () => {
+            elements.chatInput.style.height = 'auto';
+            elements.chatInput.style.height = Math.min(elements.chatInput.scrollHeight, 80) + 'px';
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        console.log('Ndilo Assistant initialized');
+        console.log('Languages supported: 11 SA languages');
+        console.log('⚠️  Remember to add your Groq API key to CONFIG.GROQ_API_KEY');
+    </script>
+</body>
+</html>
